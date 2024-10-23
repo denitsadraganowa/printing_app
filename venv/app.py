@@ -1,5 +1,3 @@
-
-
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QFileDialog, QVBoxLayout, QWidget, QPushButton, QSlider, QHBoxLayout
 from PyQt5.QtGui import QPixmap
 from PIL import Image, ImageEnhance
@@ -32,8 +30,8 @@ class ImageApp(QMainWindow):
         # Add sliders for color adjustments
         self.create_color_sliders()
 
-        # Create Fit In and Fit Out buttons
-        self.create_fit_buttons()
+        # Create Fit In, Fit Out, and Rotate buttons
+        self.create_fit_and_rotate_buttons()
 
         # Set the central widget layout
         self.central_widget.setLayout(self.layout)
@@ -82,8 +80,8 @@ class ImageApp(QMainWindow):
         # Add sliders layout to the main layout
         self.layout.addLayout(slider_layout)
 
-    def create_fit_buttons(self):
-        """Create Fit In and Fit Out buttons."""
+    def create_fit_and_rotate_buttons(self):
+        """Create Fit In, Fit Out, and Rotate buttons."""
         fit_layout = QHBoxLayout()
 
         # Fit In button
@@ -96,14 +94,22 @@ class ImageApp(QMainWindow):
         self.fit_out_button.clicked.connect(self.fit_out)
         fit_layout.addWidget(self.fit_out_button)
 
-        # Add fit buttons layout to the main layout
+        # Rotate Left button
+        self.rotate_left_button = QPushButton("Rotate Left")
+        self.rotate_left_button.clicked.connect(self.rotate_left)
+        fit_layout.addWidget(self.rotate_left_button)
+
+        # Rotate Right button
+        self.rotate_right_button = QPushButton("Rotate Right")
+        self.rotate_right_button.clicked.connect(self.rotate_right)
+        fit_layout.addWidget(self.rotate_right_button)
+
+        # Add fit and rotate buttons layout to the main layout
         self.layout.addLayout(fit_layout)
 
     def open_image(self):
         """Open a file dialog to choose an image and display it."""
-        # Open a file dialog to select the image file
         image_path, _ = QFileDialog.getOpenFileName(self, "Open Image File", "", "Images (*.png *.xpm *.jpg *.bmp *.jpeg)")
-
         if image_path:
             # Open the image using PIL
             self.image = Image.open(image_path)
@@ -121,8 +127,6 @@ class ImageApp(QMainWindow):
         byte_array = io.BytesIO()
         image.save(byte_array, format='PNG')
         byte_array.seek(0)
-
-        # Create a QPixmap from the byte array
         pixmap = QPixmap()
         pixmap.loadFromData(byte_array.getvalue())
         return pixmap
@@ -137,48 +141,55 @@ class ImageApp(QMainWindow):
         if self.original_pixmap:
             self.image_label.setPixmap(self.original_pixmap.scaled(self.image_label.size(), aspectRatioMode=False, transformMode=0))
 
+    def rotate_left(self):
+        """Rotate the image 90 degrees counterclockwise."""
+        if self.image:
+            self.image = self.image.rotate(90, expand=True)  # Rotate 90 degrees left
+            self.display_image(self.image_to_pixmap(self.image))
+
+    def rotate_right(self):
+        """Rotate the image 90 degrees clockwise."""
+        if self.image:
+            self.image = self.image.rotate(-90, expand=True)  # Rotate 90 degrees right
+            self.display_image(self.image_to_pixmap(self.image))
+
     def update_image(self):
         """Update the image based on the current slider values."""
         if self.image:
-            # Create a copy of the original image
             modified_image = self.image.copy()
 
-            # Adjust yellow/blue
+            # Adjust colors and brightness
             yellow_blue_value = self.yellow_blue_slider.value()
             modified_image = self.apply_yellow_blue_tint(modified_image, yellow_blue_value)
 
-            # Adjust magenta/green
             magenta_green_value = self.magenta_green_slider.value()
             modified_image = self.apply_magenta_green_tint(modified_image, magenta_green_value)
 
-            # Adjust cyan/red
             cyan_red_value = self.cyan_red_slider.value()
             modified_image = self.apply_cyan_red_tint(modified_image, cyan_red_value)
 
-            # Adjust brightness
-            brightness_value = self.brightness_slider.value() / 100.0  # Scale to range 0.0 - 2.0
+            brightness_value = self.brightness_slider.value() / 100.0
             modified_image = ImageEnhance.Brightness(modified_image).enhance(brightness_value)
 
-            # Convert modified image to QPixmap and display it
+            # Display modified image
             self.display_image(self.image_to_pixmap(modified_image))
 
     def apply_yellow_blue_tint(self, image, value):
-        """Apply yellow/blue tint based on the value."""
         r, g, b = image.split()
-        r = r.point(lambda i: i + value)  # Increase red for yellow, decrease for blue
+        r = r.point(lambda i: i + value)  
         return Image.merge("RGB", (r, g, b))
 
     def apply_magenta_green_tint(self, image, value):
-        """Apply magenta/green tint based on the value."""
         r, g, b = image.split()
-        g = g.point(lambda i: i + value)  # Increase green for green, decrease for magenta
+        g = g.point(lambda i: i + value)  
         return Image.merge("RGB", (r, g, b))
 
     def apply_cyan_red_tint(self, image, value):
-        """Apply cyan/red tint based on the value."""
         r, g, b = image.split()
-        b = b.point(lambda i: i + value)  # Increase blue for cyan, decrease for red
+        b = b.point(lambda i: i + value)  
         return Image.merge("RGB", (r, g, b))
+    
+
 
 # Main function to run the application
 def main():

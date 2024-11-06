@@ -1,0 +1,10 @@
+Collection 1
+C:/Users/DenitsaD/OneDrive - Copaco DC B.V/Bureaublad/work/printing app 2/printing_app/venv/download.jpg,False
+C:/Users/DenitsaD/OneDrive - Copaco DC B.V/Bureaublad/work/printing app 2/printing_app/venv/edit.jpg,False
+
+Collection 2
+C:/Users/DenitsaD/OneDrive - Copaco DC B.V/Bureaublad/work/printing app 2/printing_app/venv/edited_image - Copy.png,True
+C:/Users/DenitsaD/OneDrive - Copaco DC B.V/Bureaublad/work/printing app 2/printing_app/venv/edited_image.png,True
+
+Collection 3
+C:/Users/DenitsaD/OneDrive - Copaco DC B.V/Bureaublad/work/printing app 2/printing_app/venv/heart.jpg,True

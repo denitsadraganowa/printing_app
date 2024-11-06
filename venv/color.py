@@ -7,10 +7,14 @@ import os
 import sys
 
 class ColorEditorApp(QMainWindow):
-    def __init__(self, main_window, image_paths):
-        super().__init__()
+    def __init__(self, main_window=None, image_paths=None):
+        super().__init__(main_window)  # Corrected line
+        self.image_paths = image_paths if image_paths else []
+        self.main_window = main_window  # Reference to the main window
+        self.image_paths = image_paths if image_paths else []
 
         self.main_window = main_window  # Reference to the main window
+
         self.setWindowTitle("Image Color Editor")
         self.setGeometry(300, 300, 1200, 800)
 
@@ -47,15 +51,18 @@ class ColorEditorApp(QMainWindow):
         self.main_layout.addWidget(self.apply_button)  # Corrected to use main_layout
 
     def display_images(self, image_paths):
-        """Display all selected images in a grid layout."""
-        row, col = 0, 0
-        max_columns = 3
-        self.image_labels = []
-        self.original_images = []
-        self.current_images = []
-        self.image_paths = image_paths  # Store the paths for saving later
+         """Display all selected images in a grid layout."""
+         row, col = 0, 0
+         max_columns = 3
+         self.image_labels = []
+         self.original_images = []
+         self.current_images = []
+         self.image_paths = image_paths  # Store the paths for saving later
 
-        for image_path in image_paths:
+        
+
+
+         for image_path in image_paths:
             if not os.path.exists(image_path):
                 continue
 

@@ -4,7 +4,8 @@ from PyQt5.QtGui import QPixmap
 from PIL import Image, ImageEnhance
 import sys
 import io
-
+from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
+from PyQt5.QtGui import QImage, QPainter
 class ImageEditorApp(QMainWindow):
     image_saved = pyqtSignal(str)  # Signal to emit the saved image path
 
@@ -17,7 +18,8 @@ class ImageEditorApp(QMainWindow):
 
         # Store the image path for saving purposes
         self.image_path = image_path
-
+        self.print_button = QPushButton("Print Image")
+        self.print_button.clicked.connect(self.print_image)
         # Create a central widget and a horizontal layout
         self.central_widget = QWidget()
         self.main_layout = QHBoxLayout(self.central_widget)  # Use QHBoxLayout for side-by-side arrangement
@@ -39,7 +41,7 @@ class ImageEditorApp(QMainWindow):
         self.original_image = Image.open(image_path)
         self.image = self.original_image.copy()
         self.display_image()
-
+        self.controls_layout.addWidget(self.print_button)
         self.setCentralWidget(self.central_widget)
 
     def load_styles(self, filename):
@@ -274,6 +276,37 @@ class ImageEditorApp(QMainWindow):
         self.image.save(self.image_path)  # Save the modified image
         self.image_saved.emit(self.image_path)  # Emit signal to notify the main application
         self.close()  # Close the editor window
+    def print_image(self):
+     """Print the currently displayed image."""
+     printer = QPrinter(QPrinter.HighResolution)
+     print_dialog = QPrintDialog(printer, self)
+
+     if print_dialog.exec_() == QPrintDialog.Accepted:
+        # Convert the PIL Image to QImage
+        byte_array = io.BytesIO()
+        self.image.save(byte_array, format='PNG')  # Save the image to a bytes buffer
+        byte_array.seek(0)
+        qimage = QImage()
+        qimage.loadFromData(byte_array.getvalue())
+
+        # Paint the QImage on the printer canvas
+        painter = QPainter(printer)
+        if not painter.begin(printer):
+            print("Failed to start painting!")
+            return
+
+        # Get the printer viewport and scale the image accordingly
+        rect = painter.viewport()
+        image_size = qimage.size()  # QSize of the QImage
+        scaled_size = image_size.scaled(rect.size(), Qt.KeepAspectRatio)  # Properly scaled size
+
+        # Center the image on the page
+        x_offset = (rect.width() - scaled_size.width()) // 2
+        y_offset = (rect.height() - scaled_size.height()) // 2
+        painter.setViewport(x_offset, y_offset, scaled_size.width(), scaled_size.height())
+        painter.setWindow(qimage.rect())
+        painter.drawImage(0, 0, qimage)
+        painter.end()
 
 # Main function to run the application
 if __name__ == "__main__":

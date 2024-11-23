@@ -4,98 +4,138 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QSpacerItem, QFileDialog,
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter
 from PyQt5.QtCore import Qt, QSize
 import os
-
+from print import PrintWindow
 import sys
 from edit import ImageEditorApp  
 from PyQt5.QtGui import QPixmap, QIcon 
 from color import ColorEditorApp 
-
+import sqlite3
 
 class ImageGridApp(QMainWindow):
-    def __init__(self, collection_data=None):
+    def __init__(self, collection_data=None, collection_id=None):
         super().__init__()
-
+        self.setGeometry(100, 100, 1000, 800)
         self.image_paths = []
         self.image_widgets = [] 
-        self.collection_data = collection_data 
+        self.collection_data = collection_data  # The collection's image data
+        self.collection_id = collection_id
         self.selected_images = []
-        self.image_favorites=[]
+        self.image_favorites = []
         self.setWindowTitle("MV | Printing Software")
         self.resize(1200, 800)  
         self.center()
-        self.load_styles("main.qss")
+        self.db_connection = sqlite3.connect('my_database.db')  # Connect to the database
+        self.cursor = self.db_connection.cursor()
+      
+
         
-       
         self.central_widget = QWidget()
         self.main_layout = QVBoxLayout()
 
- 
         top_layout = QHBoxLayout()
-        
-        
         spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         top_layout.addItem(spacer)
 
-       
         self.upload_button = QPushButton(self)
-        self.upload_button.setIcon(QIcon("upload.jpg"))
+        self.upload_button.setIcon(QIcon("images/upload.jpg"))
         self.upload_button.clicked.connect(self.import_images)
 
-        
         top_layout.addWidget(self.upload_button)
 
-       
         self.main_layout.addLayout(top_layout)
 
-  
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.image_container = QWidget()
-        self.grid_layout = QGridLayout(self.image_container)  
+        self.grid_layout = QGridLayout(self.image_container)
 
-    
         self.scroll_area.setWidget(self.image_container)
         self.main_layout.addWidget(self.scroll_area)
 
-      
         self.central_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.central_widget)
 
-       
+        self.apply_stylesheet()
         if collection_data:
             self.load_collection_images(collection_data)
-
+    def closeEvent(self, event):
+        """Ensure the database connection is closed properly."""
+        self.db_connection.close()
+        super().closeEvent(event)
     def load_collection_images(self, collection_data):
-     """Load the images for the given collection data."""
-     self.clear_layout()  
-     self.image_widgets = []  # Reset the list of image containers
+      """Load the images for the given collection data."""
+      self.clear_layout()  
+      self.image_widgets = []  
 
-     print("Collection data:", collection_data)
+      print("Collection data:", collection_data)
 
-     for image_data in collection_data:
+      for image_data in collection_data:
         image_path = image_data['path']
-        is_favorite = image_data['edited']
-        print(f"Processing image at path: {image_path}, Favorite: {is_favorite}")
+        
+        print(f"Processing image at path: {image_path}")
 
-        # Create and append image containers
-        image_container = self.create_image_container(image_path, is_favorite)
+        
+        image_container = self.create_image_container(image_path)
         if image_container:
             self.image_widgets.append(image_container)
 
-     self.arrange_images_in_grid()
+      self.arrange_images_in_grid()
 
 
-    
+    def apply_stylesheet(self):
+        """Apply consistent stylesheet across the app."""
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2c577a;
+            }
+            QLabel {
+                font-size: 32px;
+                color: #ffffff;
+            }
+            QLineEdit {
+                font-size: 18px;
+                background-color: #2c577a;
+                color: #ffffff;
+                border-radius: 20px;
+                padding: 10px;
+            }
+            QPushButton {
+                font-size: 18px;
+                color: #ffffff;
+                background-color: #be3228;
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #145050;
+            }
+            QPushButton:pressed {
+                background-color: #0f4c5c;
+            }
+            QFrame {
+                background-color: #E0E0E0;
+                border: 1px solid #ccc;
+                border-radius: 10px;
+            }
+            QCheckBox {
+                margin: 2px;
+                color: #ffffff;
+            }
+            QScrollArea {
+                background-color: #0f4c5c;
+                border: none;
+            }
+        """)
   
 
 
     
     def center(self):
-        """Center the window on the screen."""
         qr = self.frameGeometry() 
         cp = QApplication.desktop().availableGeometry().center()  
         qr.moveCenter(cp) 
         self.move(qr.topLeft()) 
+
     
     def open_new_file(self, image_path):
      """Open the image editor with the selected image path."""
@@ -106,12 +146,28 @@ class ImageGridApp(QMainWindow):
         with open(filename, "r") as file:
             self.setStyleSheet(file.read())
     def save_image_paths(self):
-     """Save the list of image paths and their favorite status to a file."""
-     with open("images.txt", "w") as file:
-        for collection_name, images in self.image_collections.items():
-            file.write(f"{collection_name}\n")  
-            for path, is_favorite in images:
-                file.write(f"{path},{is_favorite}\n") 
+     """Save image metadata to the database."""
+     for file_path in self.image_paths:
+        file_name = os.path.basename(file_path)
+        try:
+            self.cursor.execute("""
+                INSERT INTO Images (CollectionID, ImagePath)
+                VALUES (?, ?)
+            """, (self.collection_id, file_name))
+            self.db_connection.commit()
+            print(f"Image saved to database: {file_path}")
+        except sqlite3.Error as e:
+            print(f"Error saving image to database: {e}")
+    def open_print_window(self):
+        """Open the PrintWindow with the selected collection."""
+        collection_name = self.collection_data[0]
+       
+        print_window = PrintWindow(collection_name)
+        print_window.show()
+        
+        if collection_name:
+            print_window = PrintWindow(collection_name)
+            print_window.show()
 
     def import_images(self):
      """Open a file dialog to select and import multiple images."""
@@ -123,7 +179,7 @@ class ImageGridApp(QMainWindow):
             absolute_path = os.path.abspath(image_path)
             if absolute_path not in self.image_paths:  
                 self.image_paths.append(absolute_path)
-                self.image_favorites[absolute_path] = False  
+                 
                 image_container = self.create_image_container(absolute_path, False)  
                 self.image_widgets.append(image_container)
 
@@ -135,6 +191,7 @@ class ImageGridApp(QMainWindow):
         FRAME_HEIGHT = 576 
         container = QFrame()
         container.setFixedSize(FRAME_WIDTH, FRAME_HEIGHT)
+        container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         container.setFrameShape(QFrame.Box)
         container.setStyleSheet("""
         QFrame {
@@ -151,19 +208,18 @@ class ImageGridApp(QMainWindow):
         pixmap = QPixmap(image_path)
         if not os.path.exists(image_path):
             print(f"Error: Image file does not exist at {image_path}")
-            return None  # Skip if image doesn't exist
+            return None  
         
         print(f"Loading image from path: {image_path}")
         pixmap = QPixmap(image_path)
 
         if pixmap.isNull():
             print(f"Failed to load image from path: {image_path}")
-            return None  # If image fails to load, return None
-        
+            return None  
         print(f"Successfully loaded image from: {image_path}, Size: {pixmap.size()}")
         image_label.setPixmap(pixmap)
         image_label.setAlignment(Qt.AlignCenter)
-        image_label.setStyleSheet("background-color: white;")  # Background to show framing area
+        image_label.setStyleSheet("background-color: white;")  
         container_layout.addWidget(image_label)
 
 
@@ -192,23 +248,25 @@ class ImageGridApp(QMainWindow):
         button_size = 60
 
         download_button = QPushButton()
-        download_button.setIcon(QIcon("download.jpg"))
+        download_button.setIcon(QIcon("images/download.jpg"))
         download_button.setIconSize(QSize(40, 40))
         edit_button = QPushButton()
-        edit_button.setIcon(QIcon("edit.jpg"))
+        edit_button.setIcon(QIcon("images/edit.jpg"))
         edit_button.setIconSize(QSize(40, 40))
         palette_button = QPushButton()
         palette_button.setIcon(QIcon("palette.jpg"))
         palette_button.setIconSize(QSize(40, 40))
-        favorite_button = QPushButton()
-        favorite_button.setIcon(QIcon("heart.jpg"))
-        favorite_button.setIconSize(QSize(40, 40))
+        #favorite_button = QPushButton()
+       # favorite_button.setIcon(QIcon("images/heart.jpg"))
+       # favorite_button.setIconSize(QSize(40, 40))
         delete_button = QPushButton()
-        delete_button.setIcon(QIcon("delete.png"))
+        delete_button.setIcon(QIcon("images/delete.png"))
         delete_button.setIconSize(QSize(40, 40))
+        #self.print_button = QPushButton("Print Collection", self)
+       # self.print_button.clicked.connect(self.open_print_window) 
 
      
-        for btn in [download_button, edit_button, palette_button, favorite_button, delete_button]:
+        for btn in [download_button, edit_button, palette_button, delete_button]:
             btn.setFixedSize(button_size, button_size)
             btn.setStyleSheet("""
                 QPushButton {
@@ -224,11 +282,11 @@ class ImageGridApp(QMainWindow):
                     background-color: #357ABD;
                 }
             """)
-        favorite_button.setStyleSheet("border: 2px solid red;" if is_edited else "")
+        
        
         download_button.clicked.connect(lambda: self.download_image(image_path))
         palette_button.clicked.connect(self.open_selected_images_in_palette)
-        favorite_button.clicked.connect(lambda: self.toggle_favorite(image_path, favorite_button))  # Connect favorite button to toggle
+        
         delete_button.clicked.connect(lambda: self.delete_image_container(container))
         edit_button.clicked.connect(lambda: self.open_new_file(image_path))
         button_layout.addWidget(delete_button)
@@ -237,13 +295,13 @@ class ImageGridApp(QMainWindow):
         button_layout.addWidget(download_button)
         button_layout.addWidget(edit_button)
         button_layout.addWidget(palette_button)
-        button_layout.addWidget(favorite_button)
+        
         button_layout.addWidget(delete_button)
 
-        # Set the height of the button panel to match the button size
+        
         button_panel.setFixedHeight(button_size + 10)
 
-        # Add the button panel to the container layout, attach it closely to the image
+        
         container_layout.addWidget(button_panel, alignment=Qt.AlignBottom)
 
         return container
@@ -251,22 +309,22 @@ class ImageGridApp(QMainWindow):
         """Toggle the favorite status of the image and update the UI accordingly."""
         current_status = self.image_favorites.get(image_path, False)
         new_status = not current_status
-        self.image_favorites[image_path] = new_status  # Update favorite status in the dictionary
+        self.image_favorites[image_path] = new_status 
         
-        # Update button appearance based on new favorite status
+       
         favorite_button.setStyleSheet("border: 2px solid red;" if new_status else "")
 
-        self.save_image_paths()  # Save the updated favorite status to the file
+        self.save_image_paths()  
     def download_image(self, image_path):
      """Download the selected image to a user-specified directory."""
      directory = QFileDialog.getExistingDirectory(self, "Select Download Directory")
     
      if directory:
-        # Define the full path where the image will be saved
-        filename = os.path.basename(image_path)  # Get the original file name
+        
+        filename = os.path.basename(image_path) 
         save_path = os.path.join(directory, filename)
         
-        # Save the image as a new file in the selected directory
+      
         pixmap = QPixmap(image_path)
         pixmap.save(save_path)  # Save the image
         
@@ -312,7 +370,6 @@ class ImageGridApp(QMainWindow):
 
 
     def clear_layout(self):
-        """Clear the current layout of image containers."""
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
             widget = item.widget()
@@ -320,17 +377,24 @@ class ImageGridApp(QMainWindow):
                 widget.deleteLater()
 
         self.image_widgets.clear()
+    def create_new_collection(self):
+        """Handle the creation of a new collection."""
+        collection_name, ok = QInputDialog.getText(self, "New Collection", "Enter collection name:")
+        if ok and collection_name:
+            # Initialize an empty collection
+            self.collection_data = []  # Clear the current collection data if needed, or initialize a new empty one
+            print(f"New collection created: {collection_name}")
+            
+            # You can initialize an empty collection or load some predefined content
+            self.load_collection_images(self.collection_data)  # Refresh the grid with the new collection
 
     def arrange_images_in_grid(self):
-        """Arrange image containers dynamically in a grid layout."""
-        # Clear existing widgets from the grid layout
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
-                widget.setParent(None)  # Detach widget from layout but keep it in memory
+                widget.setParent(None)
 
-        # Populate the grid layout with all image containers
         num_columns = 3  # Example column count
         row = 0
         col = 0

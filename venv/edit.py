@@ -1,8 +1,9 @@
-from PyQt5.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton, QSlider, QHBoxLayout, QApplication
+from PyQt5.QtWidgets import QMainWindow,QComboBox, QLabel, QVBoxLayout, QWidget, QPushButton, QSlider, QHBoxLayout, QApplication
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap
 from PIL import Image, ImageEnhance
 import sys
+from PyQt5.QtCore import pyqtSignal, Qt, QRect, QSize
 import io
 from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
 from PyQt5.QtGui import QImage, QPainter
@@ -39,6 +40,7 @@ class ImageEditorApp(QMainWindow):
         
         self.original_image = Image.open(image_path)
         self.image = self.original_image.copy()
+        self.original_aspect = self.original_image.width / self.original_image.height
         self.display_image()
         self.controls_layout.addWidget(self.print_button)
         self.setCentralWidget(self.central_widget)
@@ -78,26 +80,29 @@ class ImageEditorApp(QMainWindow):
         slider_layout = QVBoxLayout()  
         
         
+
+        # Add buttons to select crop size
+        self.crop_size_combo = QComboBox()
+        self.crop_size_combo.addItem("200x200")
+        self.crop_size_combo.addItem("400x400")
+        self.crop_size_combo.addItem("600x600")
+        self.crop_size_combo.currentIndexChanged.connect(self.on_crop_size_change)
+
+        self.controls_layout.addWidget(self.crop_size_combo)
+
+        self.controls_layout.addWidget(self.print_button)
+       
         
-        self.brightness_slider = QSlider()
-        self.brightness_slider.setOrientation(Qt.Horizontal)
-          
-        self.brightness_slider.setRange(0, 200)
-        self.brightness_slider.setValue(100)  
-        self.brightness_slider.valueChanged.connect(self.update_image)
-        self.brightness_slider.valueChanged.connect(lambda value: self.update_slider_label(self.brightness_label, "Brightness", value))
-        self.brightness_label = QLabel("Brightness: 100")
-        self.brightness_decrease_button = QPushButton("-")
-        self.brightness_decrease_button.setFixedSize(30, 30)
-        self.brightness_decrease_button.clicked.connect(lambda: self.adjust_slider_value(self.brightness_slider, -10))
-        self.brightness_increase_button = QPushButton("+")
-        self.brightness_increase_button.setFixedSize(30, 30)
-        self.brightness_increase_button.clicked.connect(lambda: self.adjust_slider_value(self.brightness_slider, 10))
-        slider_layout.addWidget(self.brightness_slider)
-        slider_layout.addWidget(self.brightness_decrease_button)
-        slider_layout.addWidget(self.brightness_increase_button)
-        slider_layout.addWidget(self.brightness_label) 
-        
+
+        self.brightness = QSlider()
+        self.brightness.setOrientation(Qt.Horizontal)  
+        self.brightness.setRange(0, 200)
+        self.brightness.setValue(100)  
+        self.brightness.valueChanged.connect(self.update_image)
+        self.brightness.valueChanged.connect(lambda value: self.update_slider_label(self.contrast_label, "Contrast", value))
+        self.br_label = QLabel("Brightness: 100")
+        slider_layout.addWidget(self.brightness)
+        slider_layout.addWidget(self.br_label) 
         
         
         
@@ -168,12 +173,65 @@ class ImageEditorApp(QMainWindow):
         self.controls_layout.addWidget(self.fit_in_button)
         self.controls_layout.addWidget(self.fit_out_button)
         self.controls_layout.addWidget(self.apply_button)
+        self.start_pos = None
+        self.crop_size = QSize(200, 200)  # Default crop size (e.g., 200x200)
+        self.crop_rect = QRect(0, 0, self.crop_size.width(), self.crop_size.height())
+
+        # Flag to check if the user is cropping
+        self.is_cropping = False
     def update_slider_label(self, label, parameter_name, value):
      """Update the text of the slider's label."""
      label.setText(f"{parameter_name}: {value}")
+    def on_crop_size_change(self):
+        """Change the crop size based on the selected value from the combo box."""
+        selected_size = self.crop_size_combo.currentText()
+        if selected_size == "200x200":
+            self.crop_size = QSize(200, 200)
+        elif selected_size == "400x400":
+            self.crop_size = QSize(400, 400)
+        elif selected_size == "600x600":
+            self.crop_size = QSize(600, 600)
+
+        # Reset the crop rectangle to the new size
+        self.crop_rect = QRect(self.crop_rect.topLeft(), self.crop_size)
+        self.is_cropping = False
+        self.display_image()
+    def mousePressEvent(self, event):
+     """Start cropping when the user clicks on the image."""
+     if event.button() == Qt.LeftButton:
+        self.start_pos = event.pos()
+        self.crop_rect.setTopLeft(self.start_pos)
+        self.is_cropping = True
+
+    def mouseMoveEvent(self, event):
+     """Update the crop rectangle as the user drags the mouse."""
+     if self.is_cropping and self.start_pos:
+        end_pos = event.pos()
+        self.crop_rect.setBottomRight(end_pos)
+        self.display_image()
+
+    def mouseReleaseEvent(self, event):
+     """Finalize the cropping when the user releases the mouse."""
+     if self.is_cropping:
+        self.is_cropping = False
+        self.apply_crop()  # Apply the crop to the image after the release
+
+    def apply_crop(self):
+        """Crop the image based on the selected area."""
+        if self.crop_rect.width() > 0 and self.crop_rect.height() > 0:
+            # Crop the image using the selected rectangle
+            left = self.crop_rect.left()
+            top = self.crop_rect.top()
+            right = self.crop_rect.right()
+            bottom = self.crop_rect.bottom()
+
+            self.image = self.image.crop((left, top, right, bottom))
+            self.display_image()
+
+    
     def update_image(self):
         """Update the image based on the current slider values."""
-        brightness_value = self.brightness_slider.value() / 100.0
+        brightness_value = self.brightness.value() / 100.0
         contrast_value = self.contrast_slider.value() / 100.0
         saturation_value = self.saturation_slider.value() / 100.0
         sharpness_value = self.sharpness_slider.value() / 100.0
@@ -197,61 +255,52 @@ class ImageEditorApp(QMainWindow):
         self.display_image()
 
     def fit_in(self):
-        """Crop the image to fit within the display area, reducing its size."""
+        """Fit the image inside the display area, scaling it down if necessary."""
         target_width = 600  
         target_height = 400  
-    
         original_width, original_height = self.image.size
 
-        
         original_aspect = original_width / original_height
         target_aspect = target_width / target_height
 
         if original_aspect > target_aspect:
-            
             new_height = target_height
             new_width = int(new_height * original_aspect)
         else:
-            
             new_width = target_width
             new_height = int(new_width / original_aspect)
 
-        
+        # Resize image to fit while maintaining aspect ratio
         self.image = self.image.resize((new_width, new_height), Image.LANCZOS)
 
-        
+        # Center crop to fit target size
         left = (new_width - target_width) // 2
         top = (new_height - target_height) // 2
         right = (new_width + target_width) // 2
         bottom = (new_height + target_height) // 2
 
         self.image = self.image.crop((left, top, right, bottom))
-        self.display_image()  
-
+        self.display_image() 
     def fit_out(self):
-        """Crop the image to fill the display area, increasing its size."""
+        """Scale up the image to fill the display area, possibly cropping if needed."""
         target_width = 600  
         target_height = 400  
-    
         original_width, original_height = self.image.size
 
-        
         original_aspect = original_width / original_height
         target_aspect = target_width / target_height
 
         if original_aspect > target_aspect:
-            
             new_width = target_width
             new_height = int(new_width / original_aspect)
         else:
-        
             new_height = target_height
             new_width = int(new_height * original_aspect)
 
-        
+        # Resize image to fill the target area
         self.image = self.image.resize((new_width, new_height), Image.LANCZOS)
 
-        
+        # Center crop to fit target size
         left = (new_width - target_width) // 2
         top = (new_height - target_height) // 2
         right = (new_width + target_width) // 2
@@ -259,7 +308,6 @@ class ImageEditorApp(QMainWindow):
 
         self.image = self.image.crop((left, top, right, bottom))
         self.display_image()  
-
     def apply_changes(self):
         """Save the modified image, emit the signal, and close the window."""
         self.image.save(self.image_path)  

@@ -22,76 +22,75 @@ def connect_to_database():
 
 import sqlite3
 class LoginWindow(QWidget):
-    
-    
-    
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Login - MV | Printing Software")
         self.setGeometry(150, 150, 1200, 900)
         self.init_ui()
+
     def init_ui(self):
         layout = QVBoxLayout()
         
-       
-
-        title = QLabel("Log in")
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
-        
+  
         layout.setAlignment(Qt.AlignCenter)
-        
 
-        
-        
-      
-        
-
-        
         self.username_input = QLineEdit(self)
         self.username_input.setPlaceholderText("Enter your username")
-        
+        self.username_input.setStyleSheet("""
+            QLineEdit {
+                font-size: 18px;
+                background-color: #f7f7f7;
+                border-radius: 25px;
+                padding: 12px;
+                color: #333;
+                border: 1px solid #cccccc;
+                                          
+            }
+        """)
         layout.addWidget(self.username_input)
-     
-       
+
         self.password_label = QLineEdit(self)
         self.password_label.setEchoMode(QLineEdit.Password)
         self.password_label.setPlaceholderText("Enter your password")
+        self.password_label.setStyleSheet("""
+            QLineEdit {
+                font-size: 18px;
+                background-color: #f7f7f7;
+                border-radius: 25px;
+                padding: 12px;
+                color: #333;
+                border: 1px solid #cccccc;
+            }
+        """)
         layout.addWidget(self.password_label)
-        layout.addWidget(self.password_label)
 
-
-
-
-        
         self.login_button = QPushButton("Log in", self)
+        self.login_button.setFixedHeight(50)
+        #self.login_button.setFixedHeight(50)
+        self.login_button.setStyleSheet("""
+            QPushButton {
+                background-color: #005c99;
+                color: white;
+                font-size: 18px;
+                border-radius: 30px;
+                padding: 12px 20px;
+            }
+            QPushButton:hover {
+                background-color: #003f6a;
+            }
+            QPushButton:pressed {
+                background-color: #00243f;
+            }
+        """)
         
-        self.login_button.setFixedHeight(40)
         self.login_button.clicked.connect(self.handle_login)
         layout.addWidget(self.login_button)
 
-        
         self.setStyleSheet("""
             QWidget {
-                background-color: #01589f;
+                background-color: #003c6f;
             }
-            QLabel {
-                width:40px;
-                font-size: 32px;
-                color: #ffffff;
-                margin-bottom: 20px;
-            }
-            QLineEdit {
-                font-size: 18px;
-                background-color: white;
-                color: black;
-                border-radius: 20px;
-                padding: 10px;
-                margin: 10px 20px;
-            }
-           
         """)
-        
 
         self.setLayout(layout)
 
@@ -182,19 +181,19 @@ class CollectionButton(QPushButton):
         self.setFixedSize(300, 300)
         self.setStyleSheet("""
             QPushButton {
-                background-color:white;
-                color: black;
+                background-color: #ffffff;
+                color: #333;
                 font-size: 16px;
-                font-weight: bold;
-                border-radius: 15px;
-                border: 2px solid #01589f;
-                padding: 10px;
+                font-weight: 500;
+                border-radius: 20px;
+                padding: 20px;
+                border: 2px solid #4c7b9f;
             }
             QPushButton:hover {
                 background-color: #f5f5f5;
             }
             QPushButton:pressed {
-                background-color: #e8e8e8;
+                background-color: #e1e1e1;
             }
         """)
 
@@ -202,15 +201,15 @@ class CollectionButton(QPushButton):
         delete_button = QPushButton("Delete", self)
         delete_button.setStyleSheet("""
             QPushButton {
-                background-color: #be3228;
+                background-color: #ff5a5f;
                 color: white;
                 font-size: 12px;
                 font-weight: bold;
-                border-radius: 5px;
-                padding: 5px;
+                border-radius: 10px;
+                padding: 8px;
             }
             QPushButton:hover {
-                background-color: darkred;
+                background-color: #ff1c2c;
             }
         """)
         delete_button.setGeometry(200, 250, 80, 40)  
@@ -245,7 +244,7 @@ class CollectionButton(QPushButton):
      collection_data = next((col for col in self.image_collections if col['name'] == self.collection_name), None)
      if collection_data:
         
-        collection_screen = ImageGridApp(collection_data["images"])
+        collection_screen = ImageGridApp(collection_data["images"],self.collection_id)
         collection_screen.show()
 
 
@@ -298,12 +297,13 @@ class MainWindow(QMainWindow):
         self.stacked_widget = QStackedWidget(self)
         self.central_layout = QVBoxLayout(self.central_widget)
         self.central_layout.addWidget(self.stacked_widget)
-        logout_button = QPushButton(self)
-        logout_button.setIcon(QIcon("images/logout.jpeg"))  
+        logout_button = QPushButton("Log out",self)
+        
         logout_button.setIconSize(QSize(32, 32))  
         logout_button.setStyleSheet("""
     QPushButton {
-        background-color: white;
+                                    height:10px;
+        background-color: red;
         border-radius: 15px;
         padding: 10px;
     }

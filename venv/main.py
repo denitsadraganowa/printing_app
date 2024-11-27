@@ -1,8 +1,10 @@
 
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSpacerItem, QFileDialog, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QGridLayout, QWidget, QScrollArea, QSizePolicy, QFrame, QCheckBox  # Added QCheckBox
+from PyQt5.QtWidgets import QApplication, QDialog,QMainWindow, QSpacerItem, QFileDialog, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QGridLayout, QWidget, QScrollArea, QSizePolicy, QFrame, QCheckBox  # Added QCheckBox
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter
 from PyQt5.QtCore import Qt, QSize
+from color_profile_dialog import ColorProfileDialog
+
 import os
 from print import PrintWindow
 import sys
@@ -36,9 +38,12 @@ class ImageGridApp(QMainWindow):
         spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         top_layout.addItem(spacer)
 
-        self.upload_button = QPushButton(self)
-        self.upload_button.setIcon(QIcon("images/upload.jpg"))
+        self.upload_button = QPushButton("Upload")
+       
         self.upload_button.clicked.connect(self.import_images)
+        self.color_profile_button = QPushButton("Color Profile")
+        self.color_profile_button.clicked.connect(self.open_color_profile_dialog)
+        top_layout.addWidget(self.color_profile_button)
 
         top_layout.addWidget(self.upload_button)
 
@@ -62,6 +67,61 @@ class ImageGridApp(QMainWindow):
         """Ensure the database connection is closed properly."""
         self.db_connection.close()
         super().closeEvent(event)
+
+
+    
+    def center(self):
+        qr = self.frameGeometry() 
+        cp = QApplication.desktop().availableGeometry().center()  
+        qr.moveCenter(cp) 
+        self.move(qr.topLeft()) 
+
+    def open_color_profile_dialog(self):
+     dialog = ColorProfileDialog(self)
+     if dialog.exec_():
+        selected_profile = dialog.profile_combo.currentText()
+        
+        # Depending on the profile, load the corresponding ICC profile
+        input_profile = "sRGB.icc"  # Example input profile
+        if selected_profile == "Adobe RGB":
+            output_profile = "AdobeRGB.icc"
+        elif selected_profile == "DCI-P3":
+            output_profile = "DCIP3.icc"
+        
+        
+        
+        for image_container in self.image_widgets:
+            image_label = image_container.findChild(QLabel)
+            pixmap = image_label.pixmap()
+            if pixmap:
+                
+                pixmap.toImage().save("temp_image.jpg")
+                apply_color_profile("temp_image.jpg", input_profile, output_profile)
+
+    
+   
+    def open_new_file(self, image_path):
+     """Open the image editor with the selected image path."""
+     self.image_editor = ImageEditorApp(image_path)  
+     self.image_editor.show()
+    def load_styles(self, filename):
+        """Load styles from a QSS file and apply them to the application."""
+        with open(filename, "r") as file:
+            self.setStyleSheet(file.read())
+    def save_image_paths(self):
+     """Save image metadata to the database."""
+     for file_path in self.image_paths:
+        file_name = os.path.basename(file_path)
+        try:
+            self.cursor.execute("""
+                INSERT INTO Images (CollectionID, ImagePath)
+                VALUES (?, ?)
+            """, (self.collection_id, file_name))
+            print(self.collection_id)
+            self.db_connection.commit()
+            print(f"Image saved to database: {file_path}")
+        except sqlite3.Error as e:
+            print(f"Error saving image to database: {e}")
     def load_collection_images(self, collection_data):
       """Load the images for the given collection data."""
       self.clear_layout()  
@@ -80,6 +140,39 @@ class ImageGridApp(QMainWindow):
             self.image_widgets.append(image_container)
 
       self.arrange_images_in_grid()
+    def apply_color_profile(self, brightness, contrast, tint):
+    
+      for container in self.image_widgets:
+        image_label = container.findChild(QLabel)
+        pixmap = QPixmap(image_label.pixmap())  # Get the current pixmap
+
+        if pixmap.isNull():
+            continue
+
+        image = pixmap.toImage()
+        for x in range(image.width()):
+            for y in range(image.height()):
+                color = QColor(image.pixel(x, y))
+
+                
+                color = QColor(
+                    max(0, min(255, color.red() + brightness)),
+                    max(0, min(255, color.green() + brightness)),
+                    max(0, min(255, color.blue() + brightness))
+                )
+
+               
+                color = QColor(
+                    max(0, min(255, color.red() + tint)),
+                    max(0, min(255, color.green() + tint // 2)),
+                    max(0, min(255, color.blue() - tint))
+                )
+
+                image.setPixel(x, y, color.rgb())
+
+        new_pixmap = QPixmap.fromImage(image)
+        image_label.setPixmap(new_pixmap)
+
 
 
     def apply_stylesheet(self):
@@ -126,38 +219,6 @@ class ImageGridApp(QMainWindow):
                 border: none;
             }
         """)
-  
-
-
-    
-    def center(self):
-        qr = self.frameGeometry() 
-        cp = QApplication.desktop().availableGeometry().center()  
-        qr.moveCenter(cp) 
-        self.move(qr.topLeft()) 
-
-    
-    def open_new_file(self, image_path):
-     """Open the image editor with the selected image path."""
-     self.image_editor = ImageEditorApp(image_path)  
-     self.image_editor.show()
-    def load_styles(self, filename):
-        """Load styles from a QSS file and apply them to the application."""
-        with open(filename, "r") as file:
-            self.setStyleSheet(file.read())
-    def save_image_paths(self):
-     """Save image metadata to the database."""
-     for file_path in self.image_paths:
-        file_name = os.path.basename(file_path)
-        try:
-            self.cursor.execute("""
-                INSERT INTO Images (CollectionID, ImagePath)
-                VALUES (?, ?)
-            """, (self.collection_id, file_name))
-            self.db_connection.commit()
-            print(f"Image saved to database: {file_path}")
-        except sqlite3.Error as e:
-            print(f"Error saving image to database: {e}")
     def open_print_window(self):
         """Open the PrintWindow with the selected collection."""
         collection_name = self.collection_data[0]
@@ -314,36 +375,74 @@ class ImageGridApp(QMainWindow):
         self.save_image_paths()  
     def download_image(self, image_path):
      """Download the selected image to a user-specified directory."""
+     if not os.path.exists(image_path):
+        print(f"Error: Image file does not exist at {image_path}")
+        return
+
+    # Open a file dialog for selecting the download directory
      directory = QFileDialog.getExistingDirectory(self, "Select Download Directory")
-    
-     if directory:
-        
-        filename = os.path.basename(image_path) 
-        save_path = os.path.join(directory, filename)
-        
-      
+     if not directory:
+        print("Download canceled: No directory selected.")
+        return  # User canceled the directory selection
+
+    # Get the filename from the path and build the save path
+     filename = os.path.basename(image_path)
+     save_path = os.path.join(directory, filename)
+
+    # Load the image as a QPixmap and save it to the specified path
+     try:
         pixmap = QPixmap(image_path)
-        pixmap.save(save_path)  
-        
-       
-        print(f"Image saved to: {save_path}")
+        if pixmap.isNull():
+            print(f"Error: Failed to load image from {image_path}")
+            return
+
+        if pixmap.save(save_path):
+            print(f"Image successfully saved to: {save_path}")
+        else:
+            print(f"Error: Failed to save the image to {save_path}")
+     except Exception as e:
+        print(f"Unexpected error occurred while downloading image: {e}")
+
     def delete_image_container(self, container):
-     """Remove the image container from the layout and delete it."""
+     """Remove the image container from the layout, delete it, and remove it from the database."""
+     print("Current collection data:", self.collection_data)
     
-     index = self.image_widgets.index(container)
-    
-    
+     try:
+        # Find the index of the container in the list of image widgets
+        index = self.image_widgets.index(container)
+        
+        # Use the index to find the corresponding image path
+        if index < len(self.collection_data):
+            deleted_image_path = self.collection_data[index]['path']
+        else:
+            print("Error: Index out of bounds in collection_data.")
+            return
+     except ValueError:
+        print("Error: Container not found in image_widgets.")
+        return
+     except IndexError:
+        print("Error: Image path index out of bounds.")
+        return
+
+    # Remove container from the UI
      self.grid_layout.removeWidget(container)
      container.deleteLater()
-    
-    
+
+    # Remove the container and path from their respective lists
      self.image_widgets.pop(index)
-     deleted_image_path = self.image_paths.pop(index)
-    
-    
-     self.save_image_paths()
-    
-    
+     self.collection_data.pop(index)
+
+    # Delete the image record from the database
+     try:
+        self.cursor.execute("""
+            DELETE FROM Images WHERE ImagePath = ? AND CollectionID = ?
+        """, (os.path.basename(deleted_image_path), self.collection_id))
+        self.db_connection.commit()
+        print(f"Image deleted from database: {deleted_image_path}")
+     except sqlite3.Error as e:
+        print(f"Error deleting image from database: {e}")
+
+    # Rearrange the remaining images in the grid
      self.arrange_images_in_grid()
 
     def update_selected_images(self, checked, path):

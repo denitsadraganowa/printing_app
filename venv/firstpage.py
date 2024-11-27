@@ -13,7 +13,7 @@ import pyodbc
 import bcrypt
 def connect_to_database():
     try:
-        connection = sqlite3.connect('my_database.db')  # SQLite database file
+        connection = sqlite3.connect('my_database.db')  
         print("Connection successful!")
         return connection
     except Exception as e:
@@ -63,14 +63,9 @@ class LoginWindow(QWidget):
 
 
 
-        #self.password_label = QLabel("Password:")
-        #self.password_input = QLineEdit(self)
-        #self.password_input.setEchoMode(QLineEdit.Password)
-        #self.password_input.setPlaceholderText("Enter your password")
         
-       
         self.login_button = QPushButton("Log in", self)
-         # Replace with the actual path
+        
         self.login_button.setFixedHeight(40)
         self.login_button.clicked.connect(self.handle_login)
         layout.addWidget(self.login_button)
@@ -119,7 +114,7 @@ class LoginWindow(QWidget):
             if result:
                 hashed_password = result[0]
 
-                # Compare hashed passwords using bcrypt
+                
                 if bcrypt.checkpw(password.encode('utf-8'), hashed_password):
                     self.main_window = MainWindow(username)
                     self.main_window.show()
@@ -138,15 +133,15 @@ def load_collections_from_db(database_path):
         connection = sqlite3.connect(database_path)
         cursor = connection.cursor()
 
-        # Fetch CollectionID and Name from the Collections table
+        
         cursor.execute("SELECT CollectionID, Name FROM Collections")
         collections_data = cursor.fetchall()
 
-        # Iterate over the fetched collections
+        
         for collection_id, collection_name in collections_data:
             collection = {"id": collection_id, "name": collection_name, "images": []}
 
-            # Fetch the images for the collection
+            
             cursor.execute("SELECT ImagePath FROM Images WHERE CollectionID = ?", (collection_id,))
             images_data = cursor.fetchall()
 
@@ -218,7 +213,7 @@ class CollectionButton(QPushButton):
                 background-color: darkred;
             }
         """)
-        delete_button.setGeometry(200, 250, 80, 40)  # Position it below the main button
+        delete_button.setGeometry(200, 250, 80, 40)  
         delete_button.clicked.connect(self.delete_collection)
 
     def delete_collection(self):
@@ -246,10 +241,10 @@ class CollectionButton(QPushButton):
                 connection.close()
 
     def open_collection_screen(self):
-    # Retrieve the collection data based on the selected collection name
+    
      collection_data = next((col for col in self.image_collections if col['name'] == self.collection_name), None)
      if collection_data:
-        # Pass both the images and the Collection ID to the ImageGridApp
+        
         collection_screen = ImageGridApp(collection_data["images"])
         collection_screen.show()
 
@@ -272,11 +267,11 @@ class AdminUsersWindow(QDialog):
             connection = connect_to_database()
             cursor = connection.cursor()
 
-            # Fetch all user data
+           
             cursor.execute("SELECT Username, FirstName, LastName, CreatedAt FROM Users")
             users = cursor.fetchall()
 
-            # Display user data
+            
             for user in users:
                 user_label = QLabel(f"Username: {user[0]} | First name: {user[1]} | Last name: {user[2]} | Created at: {user[3]}")
                 user_label.setStyleSheet("font-size: 14px; margin: 5px 0;")
@@ -294,7 +289,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.username = username
         self.setWindowTitle("MV | Printing Software")
-        self.setGeometry(100, 100, 1200, 800)  # Set a larger default window size
+        self.setGeometry(100, 100, 1200, 800)  
 
 
         self.central_widget = QWidget(self)
@@ -304,8 +299,8 @@ class MainWindow(QMainWindow):
         self.central_layout = QVBoxLayout(self.central_widget)
         self.central_layout.addWidget(self.stacked_widget)
         logout_button = QPushButton(self)
-        logout_button.setIcon(QIcon("images/logout.jpeg"))  # Replace with the path to your icon file
-        logout_button.setIconSize(QSize(32, 32))  # Adjust the size of the icon
+        logout_button.setIcon(QIcon("images/logout.jpeg"))  
+        logout_button.setIconSize(QSize(32, 32))  
         logout_button.setStyleSheet("""
     QPushButton {
         background-color: white;
@@ -316,7 +311,7 @@ class MainWindow(QMainWindow):
         background-color: black;
     }
 """)
-        logout_button.clicked.connect(self.handle_logout)  # Connect to the logout handler
+        logout_button.clicked.connect(self.handle_logout)  
         if self.username == "admin1":
             admin_button = QPushButton("View All Users", self)
             admin_button.setStyleSheet("""
@@ -401,16 +396,16 @@ class MainWindow(QMainWindow):
      layout.addWidget(new_collection_button)
 
      scroll_area = QScrollArea(self)
-     scroll_area.setWidgetResizable(True)  # Enable resizing
+     scroll_area.setWidgetResizable(True)  
      scroll_widget = QWidget()
-     grid_layout = QGridLayout(scroll_widget)  # Create a grid layout
-     grid_layout.setSpacing(20)  # Set spacing between buttons
-     grid_layout.setContentsMargins(10, 10, 10, 10)  # Add margins for aesthetics
+     grid_layout = QGridLayout(scroll_widget)  
+     grid_layout.setSpacing(20) 
+     grid_layout.setContentsMargins(10, 10, 10, 10) 
 
-     # Dynamically add collection buttons to the grid
+     
      for i, collection in enumerate(collections):
         collection_button = CollectionButton(collection, collections)
-        row, col = divmod(i, 3)  # Calculate row and column indices for 3 columns
+        row, col = divmod(i, 3) 
         grid_layout.addWidget(collection_button, row, col)
 
      scroll_widget.setLayout(grid_layout)
@@ -448,12 +443,12 @@ class MainWindow(QMainWindow):
         def create_collection():
             collection_name = name_input.text().strip()
             if collection_name:
-                # Save to database
+                
                 try:
                     connection = connect_to_database()
                     cursor = connection.cursor()
 
-                    # Insert collection
+                   
                     cursor.execute("INSERT INTO Collections (Name) VALUES (?)", (collection_name,))
                     connection.commit()
                     collection_id = cursor.lastrowid

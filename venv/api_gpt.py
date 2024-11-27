@@ -1,7 +1,7 @@
 import pickle
 import requests
 import json
-
+import sys
 class PurchaseGuideQuestionGenerator:
     def __init__(self, api_key, deployment_name, api_version="2024-08-01-preview", base_url=None):
         """
@@ -58,14 +58,14 @@ class PurchaseGuideQuestionGenerator:
 def save_to_pickle(model_instance, filename):
     with open(filename, 'wb') as f:
         pickle.dump(model_instance, f)
-        print(f"Object saved to {filename}")
+      
 
 
 
 def load_from_pickle(filename):
     with open(filename, 'rb') as f:
         model_instance = pickle.load(f)
-        print(f"Object loaded from {filename}")
+       
         return model_instance
 
 
@@ -84,7 +84,8 @@ if __name__ == "__main__":
     loaded_model = load_from_pickle('purchase_guide_model.pkl')
     
    
-    product_type = "laptop"
+    product_type = sys.argv[1]
+    
     questions = loaded_model.generate_questions(product_type, num_questions=5, temperature=0.8)
     
     if questions:

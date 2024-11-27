@@ -7,37 +7,36 @@ import io
 from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
 from PyQt5.QtGui import QImage, QPainter
 class ImageEditorApp(QMainWindow):
-    image_saved = pyqtSignal(str)  # Signal to emit the saved image path
+    image_saved = pyqtSignal(str)  
 
     def __init__(self, image_path):
         super().__init__()
         self.load_styles("styles.qss") 
-        # Set up the main window
+        
         self.setWindowTitle("MV | Printing Software")
         self.setGeometry(100, 100, 800, 600)
 
-        # Store the image path for saving purposes
+        
         self.image_path = image_path
         self.print_button = QPushButton("Print Image")
         self.print_button.clicked.connect(self.print_image)
-        # Create a central widget and a horizontal layout
+       
         self.central_widget = QWidget()
-        self.main_layout = QHBoxLayout(self.central_widget)  # Use QHBoxLayout for side-by-side arrangement
-
-        # Create a vertical layout for the controls
+        self.main_layout = QHBoxLayout(self.central_widget)  
+       
         self.controls_layout = QVBoxLayout()
 
         self.create_controls()
         
-        # Add controls layout to the main layout
+       
         self.main_layout.addLayout(self.controls_layout)
 
-        # Create a label to display the image
+       
         self.image_label = QLabel(self)
-        self.image_label.setFixedSize(500, 500)  # Set a standard size for the displayed image
+        self.image_label.setFixedSize(500, 500) 
         self.main_layout.addWidget(self.image_label)
 
-        # Load and display the image
+        
         self.original_image = Image.open(image_path)
         self.image = self.original_image.copy()
         self.display_image()
@@ -57,7 +56,7 @@ class ImageEditorApp(QMainWindow):
 
     def image_to_pixmap(self, image):
         """Convert a PIL image to QPixmap."""
-        image = image.convert("RGBA")  # Ensure the image is in RGBA mode
+        image = image.convert("RGBA")  
         byte_array = io.BytesIO()
         image.save(byte_array, format='PNG')
         byte_array.seek(0)
@@ -69,22 +68,22 @@ class ImageEditorApp(QMainWindow):
      current_value = slider.value()
      new_value = current_value + adjustment
     
-    # Ensure the new value is within the range
+    
      if 0 <= new_value <= 200:
-        slider.setValue(new_value)  # Update the slider value
+        slider.setValue(new_value)  
 
     def create_controls(self):
         """Create control buttons and sliders for image editing."""
-        # Slider layout
-        slider_layout = QVBoxLayout()  # Change to QVBoxLayout for vertical arrangement of sliders
         
-        # Brightness slider
+        slider_layout = QVBoxLayout()  
+        
+        
         
         self.brightness_slider = QSlider()
         self.brightness_slider.setOrientation(Qt.Horizontal)
-          # Horizontal
+          
         self.brightness_slider.setRange(0, 200)
-        self.brightness_slider.setValue(100)  # Start with normal brightness
+        self.brightness_slider.setValue(100)  
         self.brightness_slider.valueChanged.connect(self.update_image)
         self.brightness_slider.valueChanged.connect(lambda value: self.update_slider_label(self.brightness_label, "Brightness", value))
         self.brightness_label = QLabel("Brightness: 100")
@@ -103,26 +102,26 @@ class ImageEditorApp(QMainWindow):
         
         
 
-        # Contrast slider
+        
         self.contrast_slider = QSlider()
-        self.contrast_slider.setOrientation(Qt.Horizontal)  # Horizontal
+        self.contrast_slider.setOrientation(Qt.Horizontal)  
         self.contrast_slider.setRange(0, 200)
-        self.contrast_slider.setValue(100)  # Start with normal contrast
+        self.contrast_slider.setValue(100)  
         self.contrast_slider.valueChanged.connect(self.update_image)
         self.contrast_slider.valueChanged.connect(lambda value: self.update_slider_label(self.contrast_label, "Contrast", value))
         self.contrast_label = QLabel("Contrast: 100")
         slider_layout.addWidget(self.contrast_slider)
         slider_layout.addWidget(self.contrast_label) 
 
-          # Label to show current contrast
+          
         
     
        
-        # Saturation slider
+        
         self.saturation_slider = QSlider()
-        self.saturation_slider.setOrientation(Qt.Horizontal)  # Horizontal
+        self.saturation_slider.setOrientation(Qt.Horizontal)  
         self.saturation_slider.setRange(0, 200)
-        self.saturation_slider.setValue(100)  # Start with normal saturation
+        self.saturation_slider.setValue(100)  
         self.saturation_slider.valueChanged.connect(self.update_image)
         self.saturation_slider.valueChanged.connect(lambda value: self.update_slider_label(self.saturation_label, "Saturation", value))
         self.saturation_label = QLabel("Saturation: 100")
@@ -132,48 +131,38 @@ class ImageEditorApp(QMainWindow):
         
        
 
-        # Sharpness slider
+
         self.sharpness_slider = QSlider()
-        self.sharpness_slider.setOrientation(Qt.Horizontal)  # Horizontal
+        self.sharpness_slider.setOrientation(Qt.Horizontal)  
         self.sharpness_slider.setRange(0, 200)
-        self.sharpness_slider.setValue(100)  # Start with normal sharpness
+        self.sharpness_slider.setValue(100)  
         self.sharpness_slider.valueChanged.connect(self.update_image)
         self.sharpness_slider.valueChanged.connect(lambda value: self.update_slider_label(self.sharpness_label, "Sharpness", value))
         self.sharpness_label = QLabel("Sharpness: 100") 
         slider_layout.addWidget(self.sharpness_slider)
         slider_layout.addWidget(self.sharpness_label)
     
-         # Label to show current sharpness
-       
-       
-      
-         # Add label below the slider
-
-    # Add sliders to the controls layout
-    
-
-        # Add sliders to the controls layout
         self.controls_layout.addLayout(slider_layout)
 
-        # Create Rotate buttons
+        
         self.rotate_left_button = QPushButton("Rotate Left")
         self.rotate_left_button.clicked.connect(self.rotate_left)
 
         self.rotate_right_button = QPushButton("Rotate Right")
         self.rotate_right_button.clicked.connect(self.rotate_right)
 
-        # Create Fit In/Out buttons
+        
         self.fit_in_button = QPushButton("Fit In")
         self.fit_in_button.clicked.connect(self.fit_in)
 
         self.fit_out_button = QPushButton("Fit Out")
         self.fit_out_button.clicked.connect(self.fit_out)
 
-        # Apply Changes button
+    
         self.apply_button = QPushButton("Apply Changes")
         self.apply_button.clicked.connect(self.apply_changes)
 
-        # Add buttons to the controls layout
+        
         self.controls_layout.addWidget(self.rotate_left_button)
         self.controls_layout.addWidget(self.rotate_right_button)
         self.controls_layout.addWidget(self.fit_in_button)
@@ -189,7 +178,7 @@ class ImageEditorApp(QMainWindow):
         saturation_value = self.saturation_slider.value() / 100.0
         sharpness_value = self.sharpness_slider.value() / 100.0
 
-        # Apply adjustments to the image
+        
         image = ImageEnhance.Brightness(self.original_image).enhance(brightness_value)
         image = ImageEnhance.Contrast(image).enhance(contrast_value)
         image = ImageEnhance.Color(image).enhance(saturation_value)
@@ -209,98 +198,98 @@ class ImageEditorApp(QMainWindow):
 
     def fit_in(self):
         """Crop the image to fit within the display area, reducing its size."""
-        target_width = 600  # Standard width for display
-        target_height = 400  # Standard height for display
+        target_width = 600  
+        target_height = 400  
     
         original_width, original_height = self.image.size
 
-        # Calculate aspect ratios
+        
         original_aspect = original_width / original_height
         target_aspect = target_width / target_height
 
         if original_aspect > target_aspect:
-            # Image is wider than target, crop the width
+            
             new_height = target_height
             new_width = int(new_height * original_aspect)
         else:
-            # Image is taller than target, crop the height
+            
             new_width = target_width
             new_height = int(new_width / original_aspect)
 
-        # Resize image to new dimensions
+        
         self.image = self.image.resize((new_width, new_height), Image.LANCZOS)
 
-        # Center crop to target dimensions
+        
         left = (new_width - target_width) // 2
         top = (new_height - target_height) // 2
         right = (new_width + target_width) // 2
         bottom = (new_height + target_height) // 2
 
         self.image = self.image.crop((left, top, right, bottom))
-        self.display_image()  # Update the displayed image
+        self.display_image()  
 
     def fit_out(self):
         """Crop the image to fill the display area, increasing its size."""
-        target_width = 600  # Standard width for display
-        target_height = 400  # Standard height for display
+        target_width = 600  
+        target_height = 400  
     
         original_width, original_height = self.image.size
 
-        # Calculate aspect ratios
+        
         original_aspect = original_width / original_height
         target_aspect = target_width / target_height
 
         if original_aspect > target_aspect:
-            # Image is wider than target, crop the height
+            
             new_width = target_width
             new_height = int(new_width / original_aspect)
         else:
-            # Image is taller than target, crop the width
+        
             new_height = target_height
             new_width = int(new_height * original_aspect)
 
-        # Resize image to new dimensions
+        
         self.image = self.image.resize((new_width, new_height), Image.LANCZOS)
 
-        # Center crop to target dimensions
+        
         left = (new_width - target_width) // 2
         top = (new_height - target_height) // 2
         right = (new_width + target_width) // 2
         bottom = (new_height + target_height) // 2
 
         self.image = self.image.crop((left, top, right, bottom))
-        self.display_image()  # Update the displayed image
+        self.display_image()  
 
     def apply_changes(self):
         """Save the modified image, emit the signal, and close the window."""
-        self.image.save(self.image_path)  # Save the modified image
-        self.image_saved.emit(self.image_path)  # Emit signal to notify the main application
-        self.close()  # Close the editor window
+        self.image.save(self.image_path)  
+        self.image_saved.emit(self.image_path)  
+        self.close()  
     def print_image(self):
      """Print the currently displayed image."""
      printer = QPrinter(QPrinter.HighResolution)
      print_dialog = QPrintDialog(printer, self)
 
      if print_dialog.exec_() == QPrintDialog.Accepted:
-        # Convert the PIL Image to QImage
+        
         byte_array = io.BytesIO()
-        self.image.save(byte_array, format='PNG')  # Save the image to a bytes buffer
+        self.image.save(byte_array, format='PNG')  
         byte_array.seek(0)
         qimage = QImage()
         qimage.loadFromData(byte_array.getvalue())
 
-        # Paint the QImage on the printer canvas
+        
         painter = QPainter(printer)
         if not painter.begin(printer):
             print("Failed to start painting!")
             return
 
-        # Get the printer viewport and scale the image accordingly
+        
         rect = painter.viewport()
-        image_size = qimage.size()  # QSize of the QImage
-        scaled_size = image_size.scaled(rect.size(), Qt.KeepAspectRatio)  # Properly scaled size
+        image_size = qimage.size()  
+        scaled_size = image_size.scaled(rect.size(), Qt.KeepAspectRatio)  
 
-        # Center the image on the page
+        
         x_offset = (rect.width() - scaled_size.width()) // 2
         y_offset = (rect.height() - scaled_size.height()) // 2
         painter.setViewport(x_offset, y_offset, scaled_size.width(), scaled_size.height())
@@ -308,10 +297,10 @@ class ImageEditorApp(QMainWindow):
         painter.drawImage(0, 0, qimage)
         painter.end()
 
-# Main function to run the application
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    editor = ImageEditorApp("path_to_your_image.jpg")  # Replace with the actual image path
-    editor.image_saved.connect(lambda path: print(f"Image saved at {path}"))  # Temporary for testing
+    editor = ImageEditorApp("path_to_your_image.jpg")  
+    editor.image_saved.connect(lambda path: print(f"Image saved at {path}"))  
     editor.show()
     sys.exit(app.exec_())

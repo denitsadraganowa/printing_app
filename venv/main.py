@@ -17,14 +17,14 @@ class ImageGridApp(QMainWindow):
         self.setGeometry(100, 100, 1000, 800)
         self.image_paths = []
         self.image_widgets = [] 
-        self.collection_data = collection_data  # The collection's image data
+        self.collection_data = collection_data  
         self.collection_id = collection_id
         self.selected_images = []
         self.image_favorites = []
         self.setWindowTitle("MV | Printing Software")
         self.resize(1200, 800)  
         self.center()
-        self.db_connection = sqlite3.connect('my_database.db')  # Connect to the database
+        self.db_connection = sqlite3.connect('my_database.db')  
         self.cursor = self.db_connection.cursor()
       
 
@@ -256,14 +256,11 @@ class ImageGridApp(QMainWindow):
         palette_button = QPushButton()
         palette_button.setIcon(QIcon("palette.jpg"))
         palette_button.setIconSize(QSize(40, 40))
-        #favorite_button = QPushButton()
-       # favorite_button.setIcon(QIcon("images/heart.jpg"))
-       # favorite_button.setIconSize(QSize(40, 40))
+        
         delete_button = QPushButton()
         delete_button.setIcon(QIcon("images/delete.png"))
         delete_button.setIconSize(QSize(40, 40))
-        #self.print_button = QPushButton("Print Collection", self)
-       # self.print_button.clicked.connect(self.open_print_window) 
+       
 
      
         for btn in [download_button, edit_button, palette_button, delete_button]:
@@ -326,27 +323,27 @@ class ImageGridApp(QMainWindow):
         
       
         pixmap = QPixmap(image_path)
-        pixmap.save(save_path)  # Save the image
+        pixmap.save(save_path)  
         
-        # Optionally, show a message that the download was successful
+       
         print(f"Image saved to: {save_path}")
     def delete_image_container(self, container):
      """Remove the image container from the layout and delete it."""
-    # Find the index of the container in the image_widgets list
+    
      index = self.image_widgets.index(container)
     
-    # Remove the container widget from the layout
+    
      self.grid_layout.removeWidget(container)
      container.deleteLater()
     
-    # Remove the container and path from their respective lists
+    
      self.image_widgets.pop(index)
      deleted_image_path = self.image_paths.pop(index)
     
-    # Save the updated list of paths
+    
      self.save_image_paths()
     
-    # Rearrange the remaining images in the grid
+    
      self.arrange_images_in_grid()
 
     def update_selected_images(self, checked, path):
@@ -360,11 +357,11 @@ class ImageGridApp(QMainWindow):
 
     def open_selected_images_in_palette(self):
      """Open ColorEditorApp with all selected images."""
-     if not self.selected_images:  # Check if no images are selected
+     if not self.selected_images: 
         print("No images selected to open in ColorEditorApp.")
-        return  # Do nothing if no images are selected
-     self.color_editor = ColorEditorApp(self, self.selected_images)  # Pass the main window instance (self) as an argument
-  # Pass the list of selected image paths
+        return  
+     self.color_editor = ColorEditorApp(self, self.selected_images)  
+  
      self.color_editor.show()
 
 
@@ -381,12 +378,12 @@ class ImageGridApp(QMainWindow):
         """Handle the creation of a new collection."""
         collection_name, ok = QInputDialog.getText(self, "New Collection", "Enter collection name:")
         if ok and collection_name:
-            # Initialize an empty collection
-            self.collection_data = []  # Clear the current collection data if needed, or initialize a new empty one
+            
+            self.collection_data = []  
             print(f"New collection created: {collection_name}")
             
-            # You can initialize an empty collection or load some predefined content
-            self.load_collection_images(self.collection_data)  # Refresh the grid with the new collection
+           
+            self.load_collection_images(self.collection_data)  
 
     def arrange_images_in_grid(self):
         while self.grid_layout.count():
@@ -395,7 +392,7 @@ class ImageGridApp(QMainWindow):
             if widget is not None:
                 widget.setParent(None)
 
-        num_columns = 3  # Example column count
+        num_columns = 3  
         row = 0
         col = 0
         for image_container in self.image_widgets:
@@ -409,29 +406,29 @@ class ImageGridApp(QMainWindow):
         """Resize the image to fit within the target dimensions while maintaining aspect ratio."""
         return pixmap.scaled(target_width, target_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
     
-    #### don't need the following 2 defs
+    
     def refresh_images(self, image_paths):
         """Refresh the displayed images in the main window."""
-        self.image_paths = image_paths  # Update with the new paths if needed
-        self.display_images(self.image_paths)  # Reload and display images
+        self.image_paths = image_paths 
+        self.display_images(self.image_paths)  
 
     def display_images(self, image_paths):
         """Display images in the main window."""
-        # Clear existing labels
+        
         for label in self.image_labels:
-            label.deleteLater()  # Clean up previous labels
-        self.image_labels.clear()  # Clear the list of labels
+            label.deleteLater()  
+        self.image_labels.clear()  
 
         row, col = 0, 0
         max_columns = 3
-        self.grid_layout = QGridLayout()  # Assuming you have a grid layout to display images
-        self.container_widget.setLayout(self.grid_layout)  # Set the layout for your container
+        self.grid_layout = QGridLayout() 
+        self.container_widget.setLayout(self.grid_layout)  
 
         for image_path in image_paths:
             if not os.path.exists(image_path):
                 continue
             
-            # Create a QLabel to display the image
+           
             image_label = QLabel(self)
             pixmap = QPixmap(image_path).scaled(200, 200, Qt.KeepAspectRatio)
             image_label.setPixmap(pixmap)
@@ -439,7 +436,7 @@ class ImageGridApp(QMainWindow):
             self.grid_layout.addWidget(image_label, row, col)
             self.image_labels.append(image_label)
 
-            # Update grid placement
+            
             col += 1
             if col >= max_columns:
                 col = 0

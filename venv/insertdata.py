@@ -15,7 +15,7 @@ def insert_user(username, password_hash, email, first_name, last_name):
         cursor = connection.cursor()
 
         collection_id=1
-        imagepath="C:\Users\DenitsaD\OneDrive - Copaco DC B.V\Bureaublad\work\marian\printing_app\venv\images\account.jpeg"
+        #imagepath="C:\Users\DenitsaD\OneDrive - Copaco DC B.V\Bureaublad\work\marian\printing_app\venv\images\account.jpeg"
         insert_sql = """
         INSERT INTO Users (Username, PasswordHash, Email, FirstName, LastName)
         VALUES (?, ?, ?, ?, ?);
@@ -24,10 +24,10 @@ def insert_user(username, password_hash, email, first_name, last_name):
         #cursor.execute("INSERT INTO Collections (Name) VALUES (?)", ("Collection 3",))
 
 
-        cursor.execute("INSERT INTO Images (ImagePath, CollectionID) VALUES (?, ?)", (imagepath, collection_id))
+       # cursor.execute("INSERT INTO Images (ImagePath, CollectionID) VALUES (?, ?)", (imagepath, collection_id))
 
         
-        #cursor.execute(insert_sql, (username, hashed_password, email, first_name, last_name))
+        cursor.execute(insert_sql, (username, hashed_password, email, first_name, last_name))
         connection.commit()
         print("User inserted successfully.")
         
@@ -38,4 +38,4 @@ def insert_user(username, password_hash, email, first_name, last_name):
         connection.close()
 
 
-insert_user("user", "user", "user@gmail.com", "Denitsa", "Draganova")
+insert_user("user1", "user1", "user@gmail.com", "Denitsa", "Draganova")

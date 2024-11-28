@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QApplication, QDialog,QMainWindow, QSpacerItem, QFil
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter
 from PyQt5.QtCore import Qt, QSize
 from color_profile_dialog import ColorProfileDialog
-
+from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
 import os
 from print import PrintWindow
 import sys
@@ -28,18 +28,22 @@ class ImageGridApp(QMainWindow):
         self.center()
         self.db_connection = sqlite3.connect('my_database.db')  
         self.cursor = self.db_connection.cursor()
-      
+        self.print_button = QPushButton("Print All")
+        self.print_button.clicked.connect(self.print_selected_images)  # Connect the button to the print function
+
+        
 
         
         self.central_widget = QWidget()
         self.main_layout = QVBoxLayout()
 
         top_layout = QHBoxLayout()
+        
         spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        top_layout.addItem(spacer)
-
+        
+        
         self.upload_button = QPushButton("Upload")
-       
+        top_layout.addWidget(self.print_button)
         self.upload_button.clicked.connect(self.import_images)
         self.color_profile_button = QPushButton("Color Profile")
         self.color_profile_button.clicked.connect(self.open_color_profile_dialog)
@@ -69,7 +73,64 @@ class ImageGridApp(QMainWindow):
         super().closeEvent(event)
 
 
-    
+    def print_selected_images(self):
+     """Print all selected images."""
+     if not self.selected_images:
+        print("No images selected for printing.")
+        return
+
+    # Open the print dialog to select printer
+     printer = QPrinter(QPrinter.HighResolution)
+     print_dialog = QPrintDialog(printer, self)
+     if print_dialog.exec_() != QPrintDialog.Accepted:
+        return  # If the user cancels, return
+
+     painter = QPainter(printer)
+     painter.begin(printer)
+
+    # Set up the page layout and margin
+     page_width = printer.pageRect().width()
+     page_height = printer.pageRect().height()
+     margin = 10  # Margin around the image on the page
+
+    # Loop through selected images and print them one by one
+     for image_path in self.selected_images:
+        pixmap = QPixmap(image_path)
+        if pixmap.isNull():
+            print(f"Failed to load image: {image_path}")
+            continue
+
+        # Scale the image to fit the page while maintaining aspect ratio
+        pixmap = pixmap.scaled(page_width - 2 * margin, page_height - 2 * margin, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+        # Center the image on the page
+        x_offset = (page_width - pixmap.width()) // 2
+        y_offset = (page_height - pixmap.height()) // 2
+
+        # Draw the image onto the printer
+        painter.drawPixmap(x_offset, y_offset, pixmap)
+
+        # Start a new page for the next image
+        printer.newPage()
+
+     painter.end()
+     print("Printing complete.")
+
+    def show_collection_dialog(self):
+        """Show the collection in a dialog."""
+        collection_names = [image_data['path'] for image_data in self.collection_data]
+        collection_list = '\n'.join(collection_names)
+        
+        # Create a new dialog to display the collection
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Collection Data")
+        dialog.setGeometry(100, 100, 400, 300)
+        
+        layout = QVBoxLayout(dialog)
+        label = QLabel(collection_list, dialog)
+        layout.addWidget(label)
+        
+        dialog.exec_()
     def center(self):
         qr = self.frameGeometry() 
         cp = QApplication.desktop().availableGeometry().center()  
@@ -248,8 +309,8 @@ class ImageGridApp(QMainWindow):
         self.arrange_images_in_grid()
    
     def create_image_container(self, image_path, is_edited=False):
-        FRAME_WIDTH = 384   
-        FRAME_HEIGHT = 576 
+        FRAME_WIDTH = 384  
+        FRAME_HEIGHT = 400
         container = QFrame()
         container.setFixedSize(FRAME_WIDTH, FRAME_HEIGHT)
         container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
